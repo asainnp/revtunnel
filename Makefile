@@ -20,8 +20,8 @@ systemddir=/etc/systemd/system/multi-user.target.wants
 
 install: all
 	mkdir -p $(installdir)
-	cp config.sh revtunnel.{sh,service} revtunnelasdstuser.sh looprevtunnel.sh $(installdir)
-	ln -s $(installdir)/revtunnel.service $(systemddir)/revtunnel.service
+	cp config.sh revtunnel{.sh,asdstuser.sh,loop.sh,.service} $(installdir)
+	ln -sf $(installdir)/revtunnel.service $(systemddir)/revtunnel.service
 
 uninstall:
 	rm -f $(systemddir)/revtunnel.service

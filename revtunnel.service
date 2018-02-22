@@ -1,5 +1,5 @@
 [Unit]
-Description=SSH tunnel loop
+Description=SSH reverse tunnel loop
 After=network.target
 
 [Service]

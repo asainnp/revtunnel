@@ -20,7 +20,7 @@ restartall()  { killremote; killtunnel; starttunnel; }
 case "$1" in
       starttunnel) starttunnel ;;
        killtunnel) killtunnel  ;;
-        startloop) ./looptunnel.sh > /tmp/lastrevtunnel.log ;;
+        startloop) ./revtunnelloop.sh > /tmp/lastrevtunnel.log ;;
           restart) restartall  ;;
       checktunnel) checktunnel ; exit $? ;;
          checkssh) killtunnel
