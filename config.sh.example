@@ -1,5 +1,7 @@
 # config.sh, included in looptunnels.sh, no need for x permission, nor shebang line here.
 
+runninguser=username                       # commands runned as this user, so this user's ssh-keys 
+                                           # will be used for public-key passwordless access
 # middle-server (on remote network)
 fullsrvlogin=muser@mipaddr:msshport        # all 3 parts (user, ip, port) are mandatory
   tunnelport=62822 
@@ -7,4 +9,3 @@ fullsrvlogin=muser@mipaddr:msshport        # all 3 parts (user, ip, port) are ma
 # dest-server (on local network) ... dest == source
 fulldstlogin=duser@dstipaddr:dsshport      # all 3 parts (user, ip, port) are mandatory
  dsthostname=dsthostname                   # text that command 'hostname' should return on dest comp
-                                           # note: dst-user will be used as commands running user too.
