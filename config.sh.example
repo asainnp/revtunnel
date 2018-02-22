@@ -1,7 +1,7 @@
 # config.sh, included in looptunnels.sh, no need for x permission, nor shebang line here.
 
 # middle-server (on remote network)
-fullsrvlogin=muser@mipaddr@msshport        # all 3 parts (user, ip, port) are mandatory
+fullsrvlogin=muser@mipaddr:msshport        # all 3 parts (user, ip, port) are mandatory
   tunnelport=62822 
 
 # dest-server (on local network) ... dest == source

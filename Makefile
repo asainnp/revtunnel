@@ -1,16 +1,19 @@
 default: all
 
-all: config.sh sshworks tunnelworks
-	echo now you can 'sudo make install'
+all: config.sh sshworks sshfwdworks tunnelworks
+	@echo "tests passed ok, now you can 'sudo make install'"
 
 sshworks:
 	./revtunnel.sh checkssh
 
+sshfwdworks:
+	./revtunnel.sh checksshfwd
+
 tunnelworks:
-	./revtunnel.sh checktunnelisolated
+	./revtunnel.sh checktunnelcmd
 
 config.sh:
-	echo "config.sh does not exists, you should create it from config.sh.example"
+	@echo "config.sh does not exists, you should create it from config.sh.example"
 
 installdir=/opt/revtunnel
 systemddir=/etc/systemd/system/multi-user.target.wants
