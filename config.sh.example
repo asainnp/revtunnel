@@ -6,6 +6,6 @@ runninguser=username                       # commands runned as this user, so th
 fullsrvlogin=muser@mipaddr:msshport        # all 3 parts (user, ip, port) are mandatory
   tunnelport=portvalue 
 
-# dest-server (on local network) ... dest == source
+# dest-server (on local network) ... often situation is "dest == source"
 fulldstlogin=duser@dstipaddr:dsshport      # all 3 parts (user, ip, port) are mandatory
  dsthostname=dsthostname                   # text that command 'hostname' should return on dest comp
