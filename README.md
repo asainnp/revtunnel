@@ -17,7 +17,7 @@ why?
   some part of client that connects to server and kill's all before next attempts.
 - so, for 95% situations, simple `ssh -R remoteip:tunnelport:localip:loaclport user@remoteipserver` inside some `while true; do` loop, will work well.
 - for 99% situations there is autossh and keep-alive system (still one or few line of code)
-- this code is trying to solve all that last 1% situations, by maybe to huge (over 100 lines code) effort. By doing loop, checking 
+- this code is trying to solve that last 1% situations, by maybe to huge (over 100 lines code) effort. By doing loop, checking 
   if it is ok, and killing both side when needed. Makefile also try to indicate initial problems that tooks too much time when using on 
   different computers.
 
