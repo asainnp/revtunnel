@@ -4,7 +4,7 @@ runninguser=username                       # commands runned as this user, so th
                                            # will be used for public-key passwordless access
 # middle-server (on remote network)
 fullsrvlogin=muser@mipaddr:msshport        # all 3 parts (user, ip, port) are mandatory
-  tunnelport=62822 
+  tunnelport=portvalue 
 
 # dest-server (on local network) ... dest == source
 fulldstlogin=duser@dstipaddr:dsshport      # all 3 parts (user, ip, port) are mandatory
