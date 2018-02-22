@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#do not call this script directly, use revtunnel.sh instead
+# this script is not called directly, it is called over revtunnel.sh instead for su user-switch
 
 . ./config.sh # 5 variables: runninguser, fullsrvlogin, tunnelport, fulldstlogin, dsthostname.
 
@@ -34,7 +34,7 @@ case "$1" in
                    if starttunnel; then
                       killtunnel ; exit 0;
                    else
-                      echo "err: forwarding failed, check server-side processes owning port: $tunnelport"
+                      echo "err: forwarding failed, check/kill server-side process who owns port: $tunnelport"
                       echo "     also check that server-side sshd_config contains: GatewayPorts clientspecified."
                       killtunnel ; exit 1; 
                    fi ;;
