@@ -30,12 +30,19 @@ case "$1" in
                      echo "you should set it up (as user: $dstlogname) with:"
                      echo "ssh-copy-id -p$srvsshport $srvlogname@$srvip"
                    fi ;;
-      checksshfwd) killtunnel ; starttunnel ; result=$? ; killtunnel ; exit $result ;;
+      checksshfwd) killtunnel ; 
+                   if starttunnel; then
+                      killtunnel ; exit 0;
+                   else
+                      echo "err: forwarding failed, check server-side processes owning port: $tunnelport"
+                      echo "     also check that server-side sshd_config contains: GatewayPorts clientspecified."
+                      killtunnel ; exit 1; 
+                   fi ;;
    checktunnelcmd) killtunnel ; starttunnel ; 
                    #if checktunnel; then killtunnel; exit 0; 
                    if ssh -o 'BatchMode yes' -p $tunnelport $srvip hostname; then 
                       if checktunnel; then 
-                         killtunnel; exit 0;
+                         killtunnel ; exit 0;
                       else
                          echo "err: tunnel seems ok, but hostname value do not mach config's: $dsthostname."; 
                          killtunnel ; exit 1
