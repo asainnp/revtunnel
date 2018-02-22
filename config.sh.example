@@ -1,4 +1,4 @@
-# config.sh, included in looptunnels.sh, no need for x permission, nor shebang line here.
+# config.sh, included in revtunnel.sh, no need for x permission, nor shebang line here.
 
 runninguser=username                       # commands runned as this user, so this user's ssh-keys 
                                            # will be used for public-key passwordless access
