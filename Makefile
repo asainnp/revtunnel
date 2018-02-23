@@ -1,17 +1,13 @@
 default: all
-
 all: config.sh sshworks sshfwdworks tunnelworks
 	@echo "tests passed ok, now you can 'sudo make install'"
 
 sshworks:
 	./revtunnel.sh checkssh
-
 sshfwdworks:
 	./revtunnel.sh checksshfwd
-
 tunnelworks:
 	./revtunnel.sh checktunnelcmd
-
 config.sh:
 	$(error config.sh does not exists, you should create it from config.sh.example)
 
@@ -20,7 +16,7 @@ systemddir=/etc/systemd/system/multi-user.target.wants
 runningusr=$(shell . ./config.sh ; echo $$runninguser)
 
 install:
-	[ "$(shell whoami)" = root ]
+	[ "$(shell whoami)" = root ]   # or fail
 	su $(runningusr) -c make
 	mkdir -p $(installdir)
 	cp config.sh revtunnel.sh $(installdir)
@@ -37,6 +33,5 @@ show:
 kill:
 	./revtunnel.sh stoploop || true
 reinstall:
-	make uninstall
-	make install
+	make uninstall ; make install
 
