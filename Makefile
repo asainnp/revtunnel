@@ -17,13 +17,16 @@ config.sh:
 
 installdir=/opt/revtunnel
 systemddir=/etc/systemd/system/multi-user.target.wants
+runningusr=$(shell . ./config.sh ; echo $$runninguser)
 
-install: all
+install:
+	[ "$(shell whoami)" = root ]
+	su $(runningusr) -c make
 	mkdir -p $(installdir)
-	cp config.sh revtunnel.sh revtunnel.service $(installdir)
+	cp config.sh revtunnel.sh $(installdir)
+	sed "s/^User=.*$$/User=$(runningusr)/" revtunnel.service > $(installdir)/revtunnel.service
 	ln -sf $(installdir)/revtunnel.service $(systemddir)/revtunnel.service
-	systemctl daemon-reload && systemctl start revtunnel
-	make show
+	systemctl daemon-reload && systemctl start revtunnel ; make show
 uninstall:
 	systemctl stop revtunnel || true
 	rm $(systemddir)/revtunnel.service && systemctl daemon-reload || true

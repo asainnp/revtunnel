@@ -1,26 +1,13 @@
 #!/usr/bin/env bash
-# this script is not called directly, it is called over revtunnel.sh instead for su user-switch
 
-#systemd see just first process, second (su user ...) disapears from its subprocesses,
-#so first part of trap will kill 'su user...', and second part in su user... will kill detached ssh.
-trap 'jobs -p | xargs -r kill; [ "$mainloopflag" = 1 ] && killtunnel' EXIT 
-
-########## load vars from config.sh: #############
+########## variables: ############################
 cd $(dirname $0) ;   . ./config.sh  # 5 vars: runninguser, fullsrvlogin, tunnelport, fulldstlogin, dsthostname.
 loggingfile=/tmp/lastrevtunnel.log  # for main loop logging
-scrbasename=$(basename $0)
 
-########## ensure correct running user: ##########
-id -u "$runninguser" >/dev/null || { echo "err: user '$runninguser' does not exists."; exit 1; }
-case "$(whoami)" in
-   $runninguser) ;; # ok, continue script
-           root) su $runninguser -c "$0 $*" ; exit $? ;;
-              *) echo "err: you should be user: '$runninguser' (from config.sh) or 'root' in order to run revtunnel."
-                 exit 1 ;;
-esac
+########## usercheck: ############################
+[ $(whoami) = "$runninguser" ] || { echo "this script should be called by user: $runninguser."; exit 1; }
 
 ########## functions: ############################
-loginfull2array() { echo $1 | sed 's/^\(.*\)@\(.*\):\(.*\)$/\1 \2 \3/'; }
 starttunnel() { ssh -o 'BatchMode yes' -o 'ExitOnForwardFailure yes' -fNT \
 	            -R $srvip:$tunnelport:$dstip:$dstsshport -p$srvsshport $srvlogname@$srvip; }
 killtunnel()  { pkill -f "ssh .* -R $srvip:$tunnelport"; }
@@ -28,8 +15,8 @@ killremote()  { ssh -p$srvsshport $srvlogname@$srvip 'pkill -u $srvlogname sshd'
 checktunnel() { [ "x$dsthostname" = "x$(ssh -p $tunnelport $srvip hostname)" ] && return 0 || return 1; }
 restartall()  { killremote; killtunnel; starttunnel; }
 mainwhileloop() 
-{  printf "$(date): starting $scrbasename" > $loggingfile
-   starttunnel ; dotsok=0 ; dotser=0 ;     mainloopflag=1 #for killing detached (-f) ssh
+{  printf "$(date): starting $(basename $0)" > $loggingfile
+   starttunnel ; dotsok=0 ; dotser=0 
    while true; do
       if checktunnel
          then dotser=0 ; [ $((++dotsok%60)) -eq 1 ] && printf "\n$(date), tunnel is ok, ok30s: "
@@ -39,7 +26,7 @@ mainwhileloop()
       printf "." ; sleep 30 
    done >> $loggingfile
 }
-stopmainloop() { pkill -f "$(basename $scrbasename) startloop" ; killtunnel; }
+stopmainloop() { pkill -f "$(basename $0) startloop" ; killtunnel; }
 checksshsimplenohkey(){ ssh -o 'BatchMode yes' -o 'StrictHostKeyChecking no' -p $3 $1@$2 hostname; return $?; }
 checksshsimpleonce()  { ssh -o 'BatchMode yes' -p $3 $1@$2 hostname; return $?; }
 checksshsimple()
@@ -59,6 +46,7 @@ checksshsimple()
         fi
    fi 
 }
+loginfull2array() { echo $1 | sed 's/^\(.*\)@\(.*\):\(.*\)$/\1 \2 \3/'; }
 
 ########## main switch-case: ####################
 sarr=( $(loginfull2array $fullsrvlogin) ) ; srvlogname=${sarr[0]} ; srvip=${sarr[1]} ; srvsshport=${sarr[2]}

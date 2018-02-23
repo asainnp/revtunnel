@@ -3,6 +3,7 @@ Description=SSH reverse tunnel loop
 After=network.target
 
 [Service]
+User=WillBeReplacedByMakeInstall
 ExecStart=/opt/revtunnel/revtunnel.sh startloop
 
 [Install]
