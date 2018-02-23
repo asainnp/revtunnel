@@ -1,6 +1,6 @@
 # config.sh, included in revtunnel.sh, no need for x permission, nor shebang line here.
 
-runninguser=username                       # commands runned as this user, so this user's ssh-keys...
+runninguser=username                       # commands runned as this user, its ssh-keys
                                            # ...will be used for public-key passwordless access
 # middle-server (on remote network)
 fullsrvlogin=user@ip:port                  # all 3 parts (user, ip, port) are mandatory
