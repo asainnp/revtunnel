@@ -12,7 +12,7 @@ read srvlogname srvip srvsshport dstlogname dstip dstsshport < <(echo "$fullsrvl
 sshopt()       { echo $1 | sed "s/B/-o BatchMode=yes /; s/S/-o StrictHostKeyCheckig=no /; s/E/-o ExitOnForwardFailure=yes /"; }
 starttunnel()  { ssh $(sshopt BE) -fNT -R $srvip:$tunnelportno:$dstip:$dstsshport -p$srvsshport $srvlogname@$srvip; }
 killtunnel()   { pkill -f "ssh .* -R $srvip:$tunnelportno"; }
-killremote()   { ssh -p$srvsshport $srvlogname@$srvip 'pkill -u $srvlogname sshd'; }
+killremote()   { ssh -p$srvsshport $srvlogname@$srvip "lsof -ti tcp:$tunnelportno | xargs -r kill"; }
 checktunnel()  { [ "$desthostname" = "$(ssh -p $tunnelportno $srvip hostname)" ] && return 0 || return 1; }
 restartall()   { killremote; killtunnel; starttunnel; }
 startloop() 
@@ -27,20 +27,19 @@ startloop()
       printf "." ; sleep 30 
    done >> $loggingfile
 }
-stoploop()         { pkill -f "$(basename $0) startloop" ; killtunnel; }
-checksshsimplenohkey() { ssh $(sshopt BS) -p $3 $1@$2 hostname; return $?; }
-checksshsimpleonce()   { ssh $(sshopt B ) -p $3 $1@$2 hostname; return $?; }
+stoploop()       { pkill -f "$(basename $0) startloop" ; killtunnel; }
+checksshonce()   { ssh $(sshopt $4) -p $3 $1@$2 hostname; return $?; }
 checksshsimple()
 {  sshuser=$1 ; sshserver=$2 ; sshport=$3 ; sshusp="$1@$2:$3"
-   if checksshsimpleonce $@; then return 0 # ok
-   else if checksshsimplenohkey $@; then   # no need for ssh-keygen -R $sshserver:$sshport beause...
-           return 0  # ...'StrictHostKeyhecking no' will add current and remove prev key if exists
+   if checksshonce $1 $2 $3 B; then return 0 # ok
+   else if checksshonce $1 $2 $3 BS; then   # no need for ssh-keygen -R $sshserver:$sshport beause...
+           return 0    # ...'StrictHostKeyhecking no' will add current and remove prev key if exists
         else
            echo    "err: passwordless ssh to '$sshusp' not working (result=$result)"
            read -p "     do you want to try ssh-copy-id to $sshusp as $(whoami)? " varreply 
            case "$varreply" in [Yy]) ssh-copy-id -p$srvsshport $sshuser@$sshserver ;; esac
-	fi
-        if checksshsimpleonce $@; then return 0
+        fi
+        if checksshonce $1 $2 $3 B; then return 0
         else echo "err: passwordless ssh to '$sshusp' still not working."
              echo "     try set it up mannualy, then run make again."
              exit 1
