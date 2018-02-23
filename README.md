@@ -17,6 +17,6 @@ why?
   some part of client that connects to server and kill's all before next attempts.
 - so, for 95% situations, simple `ssh -R remoteip:tunnelport:localip:localport user@remoteipserver` inside some endless loop, works well.
 - for 99% situations there is autossh and keep-alive system (still one or few lines of code)
-- this code is trying to solve that last 1% situations, by maybe too big effort (over 100 lines code). By doing loop, manually 
-  checking if it is ok all to the end, and killing both side when needed. Makefile also try to indicate initial problems that 
+- `revloop` is trying to solve that last 1% situations, by maybe too big effort (~100 lines code). By doing loop, manually 
+  checking if it is ok all way to the end, and killing both side when needed. Makefile also try to indicate initial problems that 
   tooks too much time when doing it over and over again on different computers.
