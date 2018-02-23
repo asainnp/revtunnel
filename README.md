@@ -18,7 +18,7 @@ why?
 - so, for 95% situations, simple `ssh -R remoteip:tunnelport:localip:localport user@remoteipserver` inside some endless loop, works well.
 - for 99% situations there is autossh and keep-alive system (still one or few lines of code)
 - `revloop` is trying to solve that last 1% situations, by maybe too big effort (~100 lines code). By doing loop, manually 
-  checking if it is ok all way to the end, and killing both side when needed. 
+  checking if it is ok all way to the end, and killing both sides when needed. 
 - it also tries to make installation process simpler (instead of remembering all client and server ssh-cfg options). 
   Makefile indicates known initial problems that usually tooks too much time when correcting them over and over 
   again on different computers. 
