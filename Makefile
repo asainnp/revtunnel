@@ -13,18 +13,19 @@ tunnelworks:
 	./revtunnel.sh checktunnelcmd
 
 config.sh:
-	@echo "config.sh does not exists, you should create it from config.sh.example"
+	$(error config.sh does not exists, you should create it from config.sh.example)
 
 installdir=/opt/revtunnel
 systemddir=/etc/systemd/system/multi-user.target.wants
 
 install: all
+	echo ............$0
 	mkdir -p $(installdir)
-	cp config.sh revtunnel{.sh,asuser.sh,loop.sh,.service} $(installdir)
+	cp config.sh $(addprefix revtunnel.,sh loop.sh service) $(installdir)
 	ln -sf $(installdir)/revtunnel.service $(systemddir)/revtunnel.service
 
 uninstall:
-	rm -f $(systemddir)/revtunnel.service
+	rm -f  $(systemddir)/revtunnel.service
 	rm -rf $(installdir)
 
 reinstall:
