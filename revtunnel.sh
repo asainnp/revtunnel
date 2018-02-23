@@ -3,7 +3,7 @@
 ########## variables: ############################
 cd $(dirname $0) ;   . ./config.sh  # 5 vars: runninguser,fullsrvlogin,tunnelportno,fulldstlogin,desthostname.
 loggingfile=/tmp/lastrevtunnel.log  # for main loop logging
-echo $fullsrvlogin $fulldstlogin | tr '@:' ' ' | read srvlogname srvip srvsshport dstlogname dstip dstsshport
+read srvlogname srvip srvsshport dstlogname dstip dstsshport < <(echo "$fullsrvlogin:$fulldstlogin" | tr '@:' ' ') 
 
 ########## usercheck: ############################
 [ $(whoami) = "$runninguser" ] || { echo "this script should be called by user: $runninguser."; exit 1; }
@@ -15,7 +15,7 @@ killtunnel()   { pkill -f "ssh .* -R $srvip:$tunnelportno"; }
 killremote()   { ssh -p$srvsshport $srvlogname@$srvip 'pkill -u $srvlogname sshd'; }
 checktunnel()  { [ "$desthostname" = "$(ssh -p $tunnelportno $srvip hostname)" ] && return 0 || return 1; }
 restartall()   { killremote; killtunnel; starttunnel; }
-startmainloop() 
+startloop() 
 {  printf "$(date): starting $(basename $0)" > $loggingfile
    starttunnel ; dotsok=0 ; dotser=0 
    while true; do
@@ -27,7 +27,7 @@ startmainloop()
       printf "." ; sleep 30 
    done >> $loggingfile
 }
-stopmainloop()         { pkill -f "$(basename $0) startloop" ; killtunnel; }
+stoploop()         { pkill -f "$(basename $0) startloop" ; killtunnel; }
 checksshsimplenohkey() { ssh $(sshopt BS) -p $3 $1@$2 hostname; return $?; }
 checksshsimpleonce()   { ssh $(sshopt B ) -p $3 $1@$2 hostname; return $?; }
 checksshsimple()
@@ -50,8 +50,8 @@ checksshsimple()
 
 ########## main switch-case: ####################
 case "$1" in
-        startloop) mainloop ;;
-         stoploop) stopmainloop  ;;
+        startloop) startloop ;;
+         stoploop) stoploop  ;;
    ############### checkings for Makefile: ###########################
          checkssh) if checksshsimple $srvlogname $srvip $srvsshport; then echo ...ok; else exit 1; fi ;;
       checksshfwd) killtunnel
