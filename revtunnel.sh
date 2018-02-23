@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # this script is not called directly, it is called over revtunnel.sh instead for su user-switch
 
-trap 'jobs -p | xargs -r kill; killloop' EXIT                # so that 'systemctl stop' kills subprocess too.
+#systemd see just first process, second (su user ...) disapears from its subprocesses,
+#so first part of trap will kill 'su user...', and second part in su user... will kill detached ssh.
+trap 'jobs -p | xargs -r kill; [ "$mainloopflag" = 1 ] && killtunnel' EXIT 
 
 ########## load vars from config.sh: #############
 cd $(dirname $0) ;   . ./config.sh  # 5 vars: runninguser, fullsrvlogin, tunnelport, fulldstlogin, dsthostname.
@@ -16,6 +18,7 @@ case "$(whoami)" in
               *) echo "err: you should be user: '$runninguser' (from config.sh) or 'root' in order to run revtunnel."
                  exit 1 ;;
 esac
+
 ########## functions: ############################
 loginfull2array() { echo $1 | sed 's/^\(.*\)@\(.*\):\(.*\)$/\1 \2 \3/'; }
 starttunnel() { ssh -o 'BatchMode yes' -o 'ExitOnForwardFailure yes' -fNT \
@@ -26,7 +29,7 @@ checktunnel() { [ "x$dsthostname" = "x$(ssh -p $tunnelport $srvip hostname)" ] &
 restartall()  { killremote; killtunnel; starttunnel; }
 mainwhileloop() 
 {  printf "$(date): starting $scrbasename" > $loggingfile
-   starttunnel ; dotsok=0 ; dotser=0
+   starttunnel ; dotsok=0 ; dotser=0 ;     mainloopflag=1 #for killing detached (-f) ssh
    while true; do
       if checktunnel
          then dotser=0 ; [ $((++dotsok%60)) -eq 1 ] && printf "\n$(date), tunnel is ok, ok30s: "
@@ -36,7 +39,7 @@ mainwhileloop()
       printf "." ; sleep 30 
    done >> $loggingfile
 }
-killloop() { pkill -f "$(basename $scrbasename) startloop" ; killtunnel; }
+stopmainloop() { pkill -f "$(basename $scrbasename) startloop" ; killtunnel; }
 checksshsimplenohkey(){ ssh -o 'BatchMode yes' -o 'StrictHostKeyChecking no' -p $3 $1@$2 hostname; return $?; }
 checksshsimpleonce()  { ssh -o 'BatchMode yes' -p $3 $1@$2 hostname; return $?; }
 checksshsimple()
@@ -56,14 +59,14 @@ checksshsimple()
         fi
    fi 
 }
-########## main switch-case: ####################
 
+########## main switch-case: ####################
 sarr=( $(loginfull2array $fullsrvlogin) ) ; srvlogname=${sarr[0]} ; srvip=${sarr[1]} ; srvsshport=${sarr[2]}
 darr=( $(loginfull2array $fulldstlogin) ) ; dstlogname=${darr[0]} ; dstip=${darr[1]} ; dstsshport=${darr[2]}
 
 case "$1" in
         startloop) mainwhileloop ;;
-         killloop) killloop ;;
+         stoploop) stopmainloop  ;;
    ############### checkings for Makefile: ###########################
          checkssh) if checksshsimple $srvlogname $srvip $srvsshport; then echo ...ok; else exit 1; fi ;;
       checksshfwd) killtunnel

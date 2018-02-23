@@ -22,13 +22,18 @@ install: all
 	mkdir -p $(installdir)
 	cp config.sh revtunnel.sh revtunnel.service $(installdir)
 	ln -sf $(installdir)/revtunnel.service $(systemddir)/revtunnel.service
-	systemctl daemon-reload && systemctl start revtunnel && systemctl status revtunnel
-
+	systemctl daemon-reload && systemctl start revtunnel
+	make show
 uninstall:
 	systemctl stop revtunnel || true
 	rm $(systemddir)/revtunnel.service && systemctl daemon-reload || true
 	rm -rf $(installdir)
-
+show:
+	systemctl status revtunnel || true
+	ps -eo pid,ppid,pgid,user,cmd --sort=start_time | grep '[s]sh\|[l]oop'
+kill:
+	./revtunnel.sh stoploop || true
 reinstall:
 	make uninstall
 	make install
+
