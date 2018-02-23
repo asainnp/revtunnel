@@ -3,18 +3,19 @@
 ########## variables: ############################
 cd $(dirname $0) ;   . ./config.sh  # 5 vars: runninguser,fullsrvlogin,tunnelportno,fulldstlogin,desthostname.
 loggingfile=/tmp/lastrevtunnel.log  # for main loop logging
+echo $fullsrvlogin $fulldstlogin | tr '@:' ' ' | read srvlogname srvip srvsshport dstlogname dstip dstsshport
 
 ########## usercheck: ############################
 [ $(whoami) = "$runninguser" ] || { echo "this script should be called by user: $runninguser."; exit 1; }
 
 ########## functions: ############################
-starttunnel() { ssh -o 'BatchMode yes' -o 'ExitOnForwardFailure yes' -fNT \
-	            -R $srvip:$tunnelportno:$dstip:$dstsshport -p$srvsshport $srvlogname@$srvip; }
-killtunnel()  { pkill -f "ssh .* -R $srvip:$tunnelportno"; }
-killremote()  { ssh -p$srvsshport $srvlogname@$srvip 'pkill -u $srvlogname sshd'; }
-checktunnel() { [ "$desthostname" = "$(ssh -p $tunnelportno $srvip hostname)" ] && return 0 || return 1; }
-restartall()  { killremote; killtunnel; starttunnel; }
-mainwhileloop() 
+sshopt()       { echo $1 | sed "s/B/-o BatchMode=yes /; s/S/-o StrictHostKeyCheckig=no /; s/E/-o ExitOnForwardFailure=yes /"; }
+starttunnel()  { ssh $(sshopt BE) -fNT -R $srvip:$tunnelportno:$dstip:$dstsshport -p$srvsshport $srvlogname@$srvip; }
+killtunnel()   { pkill -f "ssh .* -R $srvip:$tunnelportno"; }
+killremote()   { ssh -p$srvsshport $srvlogname@$srvip 'pkill -u $srvlogname sshd'; }
+checktunnel()  { [ "$desthostname" = "$(ssh -p $tunnelportno $srvip hostname)" ] && return 0 || return 1; }
+restartall()   { killremote; killtunnel; starttunnel; }
+startmainloop() 
 {  printf "$(date): starting $(basename $0)" > $loggingfile
    starttunnel ; dotsok=0 ; dotser=0 
    while true; do
@@ -26,9 +27,9 @@ mainwhileloop()
       printf "." ; sleep 30 
    done >> $loggingfile
 }
-stopmainloop() { pkill -f "$(basename $0) startloop" ; killtunnel; }
-checksshsimplenohkey(){ ssh -o 'BatchMode yes' -o 'StrictHostKeyChecking no' -p $3 $1@$2 hostname; return $?; }
-checksshsimpleonce()  { ssh -o 'BatchMode yes' -p $3 $1@$2 hostname; return $?; }
+stopmainloop()         { pkill -f "$(basename $0) startloop" ; killtunnel; }
+checksshsimplenohkey() { ssh $(sshopt BS) -p $3 $1@$2 hostname; return $?; }
+checksshsimpleonce()   { ssh $(sshopt B ) -p $3 $1@$2 hostname; return $?; }
 checksshsimple()
 {  sshuser=$1 ; sshserver=$2 ; sshport=$3 ; sshusp="$1@$2:$3"
    if checksshsimpleonce $@; then return 0 # ok
@@ -46,14 +47,10 @@ checksshsimple()
         fi
    fi 
 }
-loginfull2array() { echo $1 | sed 's/^\(.*\)@\(.*\):\(.*\)$/\1 \2 \3/'; }
 
 ########## main switch-case: ####################
-sarr=( $(loginfull2array $fullsrvlogin) ) ; srvlogname=${sarr[0]} ; srvip=${sarr[1]} ; srvsshport=${sarr[2]}
-darr=( $(loginfull2array $fulldstlogin) ) ; dstlogname=${darr[0]} ; dstip=${darr[1]} ; dstsshport=${darr[2]}
-
 case "$1" in
-        startloop) mainwhileloop ;;
+        startloop) mainloop ;;
          stoploop) stopmainloop  ;;
    ############### checkings for Makefile: ###########################
          checkssh) if checksshsimple $srvlogname $srvip $srvsshport; then echo ...ok; else exit 1; fi ;;
