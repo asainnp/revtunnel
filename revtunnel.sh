@@ -47,12 +47,16 @@ checksshsimple()
         fi
    fi 
 }
+function mylogrotate() { fname="$1"; for i in {7..0}; do [ -e $fname.$i ] && mv $fname.$i $fname.$((i+1)); done 
+                         [ -e $fname ] && cp $fname $fname.0 && : > $fname; }   # fname +fname.[0-8] = 10 total
 
 ########## main switch-case: ####################
 case "$1" in
-        startloop) startloop ;;
+   ########## main params: #########################
+        startloop) mylogrotate $loggingfile
+                   startloop ;;
          stoploop) stoploop  ;;
-   ############### checkings for Makefile: ###########################
+   ########## params for Makefile: #################
          checkssh) if checksshsimple $srvlogname $srvip $srvsshport; then echo ...ok; else exit 1; fi ;;
       checksshfwd) killtunnel
                    if starttunnel; then killtunnel ; echo ...ok; exit 0;
