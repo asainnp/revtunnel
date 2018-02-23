@@ -2,7 +2,8 @@
 
 # this script is not called directly, it is called over revtunnel.sh instead for su user-switch
 
-cd $(dirname $0) ; . ./config.sh # 5 variables: runninguser, fullsrvlogin, tunnelport, fulldstlogin, dsthostname.
+cd $(dirname $0) ;   . ./config.sh # 5 variables: runninguser, fullsrvlogin, tunnelport, fulldstlogin, dsthostname.
+loggingfile=/tmp/lastrevtunnel.log # for main loop logging
 
 loginfull2array() { echo $1 | sed 's/^\(.*\)@\(.*\):\(.*\)$/\1 \2 \3/'; }
 
@@ -45,7 +46,13 @@ checksshsimple()      { sshuser=$1 ; sshserver=$2 ; sshport=$3 ; sshusp="$1@$2:$
 case "$1" in
       starttunnel) starttunnel ;;
        killtunnel) killtunnel  ;;
-        startloop) ./revtunnel.loop.sh > /tmp/lastrevtunnel.log ;;
+        startloop) printf "$(date): starting $0" > $loggingfile ; dotsok=0 ; dotser=0
+                   while true; do
+                      if checktunnel; then dotser=0 ; [ $((++dotsok%60)) -eq 1 ] && printf "\n$(date), tunnel is ok, ok30s: "
+                                      else dotsok=0 ; [ $((++dotser%60)) -eq 1 ] && printf "\n$(date), tunnel error, er30s: "
+                                           ./revtunnel.sh restart; fi
+                      printf "." ; sleep 30 
+                   done >> $loggingfile ;;
           restart) restartall  ;;
       checktunnel) if checktunnel; then echo ...ok; else exit 1; fi ;;
          checkssh) if checksshsimple $srvlogname $srvip $srvsshport; then echo ...ok; else exit 1; fi ;;

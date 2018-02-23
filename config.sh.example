@@ -1,11 +1,11 @@
 # config.sh, included in revtunnel.sh, no need for x permission, nor shebang line here.
 
-runninguser=username                       # commands runned as this user, so this user's ssh-keys 
-                                           # will be used for public-key passwordless access
+runninguser=username                       # commands runned as this user, so this user's ssh-keys...
+                                           # ...will be used for public-key passwordless access
 # middle-server (on remote network)
-fullsrvlogin=muser@mipaddr:msshport        # all 3 parts (user, ip, port) are mandatory
+fullsrvlogin=user@ip:port                  # all 3 parts (user, ip, port) are mandatory
   tunnelport=portvalue 
 
-# dest-server (on local network) ... often situation is "dest == source"
-fulldstlogin=duser@dstipaddr:dsshport      # all 3 parts (user, ip, port) are mandatory
+# dest-server (on local network) ... often situation is that "dest == source"
+fulldstlogin=user@ip:port                  # all 3 parts (user, ip, port) are mandatory
  dsthostname=dsthostname                   # text that command 'hostname' should return on dest comp

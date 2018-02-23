@@ -19,13 +19,14 @@ installdir=/opt/revtunnel
 systemddir=/etc/systemd/system/multi-user.target.wants
 
 install: all
-	echo ............$0
 	mkdir -p $(installdir)
-	cp config.sh $(addprefix revtunnel.,sh loop.sh service) $(installdir)
+	cp config.sh revtunnel.sh revtunnel.service $(installdir)
 	ln -sf $(installdir)/revtunnel.service $(systemddir)/revtunnel.service
+	systemctl daemon-reload && systemctl start revtunnel && systemctl status revtunnel
 
 uninstall:
-	rm -f  $(systemddir)/revtunnel.service
+	systemctl stop revtunnel || true
+	rm $(systemddir)/revtunnel.service && systemctl daemon-reload || true
 	rm -rf $(installdir)
 
 reinstall:
