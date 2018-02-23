@@ -4,8 +4,8 @@ runninguser=username                       # commands runned as this user, its s
                                            # ...will be used for public-key passwordless access
 # middle-server (on remote network)
 fullsrvlogin=user@ip:port                  # all 3 parts (user, ip, port) are mandatory
-  tunnelport=portvalue 
+tunnelportno=value 
 
 # dest-server (on local network) ... often situation is that "dest == source"
 fulldstlogin=user@ip:port                  # all 3 parts (user, ip, port) are mandatory
- dsthostname=dsthostname                   # text that command 'hostname' should return on dest comp
+desthostname=name                          # text that command 'hostname' should return on dest comp

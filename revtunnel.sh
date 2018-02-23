@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ########## variables: ############################
-cd $(dirname $0) ;   . ./config.sh  # 5 vars: runninguser, fullsrvlogin, tunnelport, fulldstlogin, dsthostname.
+cd $(dirname $0) ;   . ./config.sh  # 5 vars: runninguser,fullsrvlogin,tunnelportno,fulldstlogin,desthostname.
 loggingfile=/tmp/lastrevtunnel.log  # for main loop logging
 
 ########## usercheck: ############################
@@ -9,10 +9,10 @@ loggingfile=/tmp/lastrevtunnel.log  # for main loop logging
 
 ########## functions: ############################
 starttunnel() { ssh -o 'BatchMode yes' -o 'ExitOnForwardFailure yes' -fNT \
-	            -R $srvip:$tunnelport:$dstip:$dstsshport -p$srvsshport $srvlogname@$srvip; }
-killtunnel()  { pkill -f "ssh .* -R $srvip:$tunnelport"; }
+	            -R $srvip:$tunnelportno:$dstip:$dstsshport -p$srvsshport $srvlogname@$srvip; }
+killtunnel()  { pkill -f "ssh .* -R $srvip:$tunnelportno"; }
 killremote()  { ssh -p$srvsshport $srvlogname@$srvip 'pkill -u $srvlogname sshd'; }
-checktunnel() { [ "x$dsthostname" = "x$(ssh -p $tunnelport $srvip hostname)" ] && return 0 || return 1; }
+checktunnel() { [ "$desthostname" = "$(ssh -p $tunnelportno $srvip hostname)" ] && return 0 || return 1; }
 restartall()  { killremote; killtunnel; starttunnel; }
 mainwhileloop() 
 {  printf "$(date): starting $(basename $0)" > $loggingfile
@@ -60,14 +60,14 @@ case "$1" in
       checksshfwd) killtunnel
                    if starttunnel; then killtunnel ; echo ...ok; exit 0;
                    else
-                      echo "err: ssh with forwarding failed, check/kill server-side process who owns port: $tunnelport"
+                      echo "err: ssh with forwarding failed, check/kill server-side process who owns port: $tunnelportno"
                       echo "     also check that server-side sshd_config contains: GatewayPorts clientspecified."
                       killtunnel; exit 1; 
                    fi ;;
    checktunnelcmd) killtunnel; starttunnel; err=1
-                   if checksshsimple $srvlogname $srvip $tunnelport; then 
+                   if checksshsimple $srvlogname $srvip $tunnelportno; then 
                       if checktunnel; then  err=0; echo ...ok
-                      else echo "err: tunnel seems ok, but hostname value do not mach config's: $dsthostname."; fi
+                      else echo "err: tunnel seems ok, but hostname value do not mach config's: $desthostname."; fi
                    fi
                    killtunnel; exit $err ;;
                 *) echo "unknown param1 '$1' for revtunnel script."
