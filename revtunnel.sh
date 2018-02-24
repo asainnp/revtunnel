@@ -9,12 +9,13 @@ read srvlogname srvip srvsshport dstlogname dstip dstsshport < <(echo "$fullsrvl
 [ $(whoami) = "$runninguser" ] || { echo "this script should be called by user: $runninguser."; exit 1; }
 
 ########## functions: ############################
-sshopt()       { echo $1 | sed "s/B/-o BatchMode=yes /; s/S/-o StrictHostKeyCheckig=no /; s/E/-o ExitOnForwardFailure=yes /"; }
+sshopt()       { echo $1 | sed "s/B/-o BatchMode=yes /; s/S/-o StrictHostKeyChecking=no /; s/E/-o ExitOnForwardFailure=yes /"; }
 starttunnel()  { ssh $(sshopt BE) -fNT -R $srvip:$tunnelportno:$dstip:$dstsshport -p$srvsshport $srvlogname@$srvip; }
 killtunnel()   { pkill -f "ssh .* -R $srvip:$tunnelportno"; }
 killremote()   { ssh -p$srvsshport $srvlogname@$srvip "lsof -ti tcp:$tunnelportno | xargs -r kill"; }
+killboth()     { killremote; killtunnel; }
 checktunnel()  { [ "$desthostname" = "$(ssh -p $tunnelportno $srvip hostname)" ] && return 0 || return 1; }
-restartall()   { killremote; killtunnel; starttunnel; }
+restartall()   { killboth; starttunnel; }
 startloop() 
 {  printf "$(date): starting $(basename $0)" > $loggingfile
    starttunnel ; dotsok=0 ; dotser=0 
@@ -33,9 +34,9 @@ checksshsimple()
 {  sshuser=$1 ; sshserver=$2 ; sshport=$3 ; sshusp="$1@$2:$3"
    if checksshonce $1 $2 $3 B; then return 0 # ok
    else if checksshonce $1 $2 $3 BS; then   # no need for ssh-keygen -R $sshserver:$sshport beause...
-           return 0    # ...'StrictHostKeyhecking no' will add current and remove prev key if exists
+           return 0    # ...'StrictHostKeyChecking no' will add current and remove prev key if exists
         else
-           echo    "err: passwordless ssh to '$sshusp' not working (result=$result)"
+           echo    "err: passwordless ssh to '$sshusp' not working"
            read -p "     do you want to try ssh-copy-id to $sshusp as $(whoami)? " varreply 
            case "$varreply" in [Yy]) ssh-copy-id -p$srvsshport $sshuser@$sshserver ;; esac
         fi
@@ -55,6 +56,9 @@ case "$1" in
         startloop) mylogrotate $loggingfile
                    startloop ;;
          stoploop) stoploop  ;;
+   ########## manual-test params: ##################
+        starttunnel) starttunnel ;;
+         killtunnel) killtunnel  ;;
    ########## params for Makefile: #################
          checkssh) if checksshsimple $srvlogname $srvip $srvsshport; then echo ...ok; else exit 1; fi ;;
       checksshfwd) killtunnel
@@ -65,7 +69,7 @@ case "$1" in
                       killtunnel; exit 1; 
                    fi ;;
    checktunnelcmd) killtunnel; starttunnel; err=1
-                   if checksshsimple $srvlogname $srvip $tunnelportno; then 
+                   if checksshsimple $dstlogname $srvip $tunnelportno; then 
                       if checktunnel; then  err=0; echo ...ok
                       else echo "err: tunnel seems ok, but hostname value do not mach config's: $desthostname."; fi
                    fi
