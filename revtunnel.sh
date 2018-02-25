@@ -37,7 +37,7 @@ checksshsimple()
    if checksshonce $1 $2 $3 BS; then return 0; fi # try ssh with non-strict key checking
    ssh-keygen -R "[$sshserver]:$sshport"          # try removing key (non-strict checking will add new value automatically)
    if checksshonce $1 $2 $3 BS; then return 0; fi    
-   read -p "err:\t passwordless ssh to '$sshusp' not working\n\tdo you want to try ssh-copy-id to $sshusp as $(whoami)? " ans
+   read -p "err:\t passwordless ssh to '$sshusp' not working\n\ttry ssh-copy-id to $sshusp as $(whoami)? " ans
    echo $answ | grep -iq '^y'     || return 1     # exit fn if user didn't response with y/Y...
    ssh-copy-id -p$sshport $sshuser@$sshserver     # try ssh-copy-id
    if checksshonce $1 $2 $3 B; then  return 0; fi 
