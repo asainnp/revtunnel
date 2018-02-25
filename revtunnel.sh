@@ -53,7 +53,7 @@ case "$1" in
    ########## main params: #########################
         startloop) mylogrotate $loggingfile; startloop ;;
          stoploop) stoploop    ;;
-   ########## params for Makefile: #################
+   ########## params for Makefile's testing: #######
          checkssh) if checksshsimple $srvuser $srvip $srvsshport; then echo ...ok; exit 0; fi
                    echo "err: passwordless ssh to middle-server not working (ssh -p$srvip $srvuser@$srvip)."
                    echo "     Try mannually to correct this." ; exit 1 ;;
