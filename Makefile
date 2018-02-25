@@ -34,4 +34,10 @@ kill:
 	./revtunnel.sh stoploop || true
 reinstall:
 	make uninstall ; make install
+start:
+	./revtunnel.sh starttunnel || true
+stop:
+	./revtunnel.sh stoptunnel  || true
+test:
+	./revtunnel.sh testtunnel  || true
 

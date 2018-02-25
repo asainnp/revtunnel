@@ -38,7 +38,7 @@ checksshsimple()
         else
            echo    "err: passwordless ssh to '$sshusp' not working"
            read -p "     do you want to try ssh-copy-id to $sshusp as $(whoami)? " varreply 
-           case "$varreply" in [Yy]) ssh-copy-id -p$srvsshport $sshuser@$sshserver ;; esac
+           case "$varreply" in [Yy]*) ssh-copy-id -p$sshport $sshuser@$sshserver ;; esac
         fi
         if checksshonce $1 $2 $3 B; then return 0
         else echo "err: passwordless ssh to '$sshusp' still not working."
@@ -59,6 +59,7 @@ case "$1" in
    ########## manual-test params: ##################
         starttunnel) starttunnel ;;
          killtunnel) killtunnel  ;;
+         testtunnel) ssh -p $tunnelportno $srvip ;;
    ########## params for Makefile: #################
          checkssh) if checksshsimple $srvlogname $srvip $srvsshport; then echo ...ok; else exit 1; fi ;;
       checksshfwd) killtunnel
