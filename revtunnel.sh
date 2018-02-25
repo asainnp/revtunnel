@@ -43,11 +43,7 @@ checksshsimple()
             read -p "     do you want to try ssh-copy-id to $sshusp as $(whoami)? " varreply 
             case "$varreply" in [Yy]*)
                ssh-copy-id -p$sshport $sshuser@$sshserver
-               if checksshonce $1 $2 $3 B; then return 0
-               else #err, giving up.
-                  echo "err: passwordless ssh to '$sshusp' still not working."
-                  echo "     try set it up mannualy, then run make again."
-               fi ;;
+               if checksshonce $1 $2 $3 B; then return 0; fi ;;
             esac
          fi
       fi
@@ -61,25 +57,33 @@ mylogrotate() { fname="$1"; for i in {7..0}; do [ -e $fname.$i ] && mv $fname.$i
 case "$1" in
    ########## main params: #########################
         startloop) mylogrotate $loggingfile
-                   startloop ;;
-         stoploop) stoploop  ;;
+                   startloop   ;;
+         stoploop) stoploop    ;;
    ########## manual-test params: ##################
-        starttunnel) starttunnel ;;
-         killtunnel) killtunnel  ;;
-         testtunnel) ssh -p $tunnelportno $srvip ;;
+      starttunnel) starttunnel ;;
+       killtunnel) killtunnel  ;;
+       testtunnel) ssh -p $tunnelportno $srvip ;;
    ########## params for Makefile: #################
-         checkssh) if checksshsimple $srvlogname $srvip $srvsshport; then echo ...ok; else exit 1; fi ;;
+         checkssh) if checksshsimple $srvlogname $srvip $srvsshport; then echo ...ok; exit 0
+                   else 
+                      echo "err: passwordless ssh to middle-server not working (ssh -p$srvip $srvlogname@$srvip)."
+                      echo "     Try mannually to correct this."
+                      exit 1
+                   fi ;;
       checksshfwd) killtunnel
-                   if starttunnel; then killtunnel ; echo ...ok; exit 0;
+                   if starttunnel; then killtunnel ; echo ...ok; exit 0
                    else
-                      echo "err: ssh with forwarding failed, check/kill server-side process who owns port: $tunnelportno"
+                      echo "err: ssh with forwarding failed, check/kill server-side process which owns port: $tunnelportno"
                       echo "     also check that server-side sshd_config contains: GatewayPorts clientspecified."
-                      killtunnel; exit 1; 
+                      killtunnel; exit 1
                    fi ;;
    checktunnelcmd) killtunnel; starttunnel; err=1
                    if checksshsimple $dstlogname $srvip $tunnelportno; then 
                       if checktunnel; then  err=0; echo ...ok
                       else echo "err: tunnel seems ok, but hostname value do not mach config's: $desthostname."; fi
+                   else 
+                      echo "err: passwordless ssh to end destination not working (ssh -p$tunnelportno $dstlogname@$srvip)"
+                      echo "     Try mannually to correct this. (use '$0 starttunnel' ...try&correct somehow...  '$0 killtunnel')."
                    fi
                    killtunnel; exit $err ;;
                 *) echo "unknown param1 '$1' for revtunnel script."
