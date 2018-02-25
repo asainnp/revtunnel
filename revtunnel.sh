@@ -3,7 +3,7 @@
 ########## variables: ############################
 cd $(dirname $0) ;   . ./config.sh  # 5 vars: runninguser,fullsrvlogin,tunnelportno,fulldstlogin,desthostname.
 loggingfile=/tmp/lastrevtunnel.log  # for main loop logging
-read srvlogname srvip srvsshport dstlogname dstip dstsshport < <(echo "$fullsrvlogin:$fulldstlogin" | tr '@:' ' ') 
+read srvlogname srvip srvsshport dstlogname dstip dstsshport < <(echo "$fullsrvlogin:$fulldstlogin" | tr '@:' ' ')
 
 ########## usercheck: ############################
 [ $(whoami) = "$runninguser" ] || { echo "this script should be called by user: $runninguser."; exit 1; }
@@ -18,14 +18,14 @@ checktunnel()  { [ "$desthostname" = "$(ssh -p $tunnelportno $srvip hostname)" ]
 restartall()   { killboth; starttunnel; }
 startloop() 
 {  printf "$(date): starting $(basename $0)" > $loggingfile
-   starttunnel ; dotsok=0 ; dotser=0 
+   starttunnel ; dotsok=0 ; dotser=0
    while true; do
       if checktunnel
          then dotser=0 ; [ $((++dotsok%60)) -eq 1 ] && printf "\n$(date), tunnel is ok, ok30s: "
          else dotsok=0 ; [ $((++dotser%60)) -eq 1 ] && printf "\n$(date), tunnel error, er30s: "
               restartall
       fi
-      printf "." ; sleep 30 
+      printf "." ; sleep 30
    done >> $loggingfile
 }
 stoploop()       { pkill -f "$(basename $0) startloop" ; killtunnel; }
@@ -33,21 +33,28 @@ checksshonce()   { ssh $(sshopt $4) -p $3 $1@$2 hostname; return $?; }
 checksshsimple()
 {  sshuser=$1 ; sshserver=$2 ; sshport=$3 ; sshusp="$1@$2:$3"
    if checksshonce $1 $2 $3 B; then return 0 # ok
-   else if checksshonce $1 $2 $3 BS; then   # no need for ssh-keygen -R $sshserver:$sshport beause...
-           return 0    # ...'StrictHostKeyChecking no' will add current and remove prev key if exists
-        else
-           echo    "err: passwordless ssh to '$sshusp' not working"
-           read -p "     do you want to try ssh-copy-id to $sshusp as $(whoami)? " varreply 
-           case "$varreply" in [Yy]*) ssh-copy-id -p$sshport $sshuser@$sshserver ;; esac
-        fi
-        if checksshonce $1 $2 $3 B; then return 0
-        else echo "err: passwordless ssh to '$sshusp' still not working."
-             echo "     try set it up mannualy, then run make again."
-             exit 1
-        fi
-   fi 
+   else # err, try non-strict key checking
+      if checksshonce $1 $2 $3 BS; then return 0 # ok
+      else # err, try removing key, for (non-strict checking will add new value automatically)
+         ssh-keygen -R "[$sshserver]:$sshport"
+         if checksshonce $1 $2 $3 BS; then return 0 # ok
+         else # err try ssh-copy-id with user confirmation:
+            echo    "err: passwordless ssh to '$sshusp' not working"
+            read -p "     do you want to try ssh-copy-id to $sshusp as $(whoami)? " varreply 
+            case "$varreply" in [Yy]*)
+               ssh-copy-id -p$sshport $sshuser@$sshserver
+               if checksshonce $1 $2 $3 B; then return 0
+               else #err, giving up.
+                  echo "err: passwordless ssh to '$sshusp' still not working."
+                  echo "     try set it up mannualy, then run make again."
+               fi ;;
+            esac
+         fi
+      fi
+   fi
+   return 1
 }
-mylogrotate() { fname="$1"; for i in {7..0}; do [ -e $fname.$i ] && mv $fname.$i $fname.$((i+1)); done 
+mylogrotate() { fname="$1"; for i in {7..0}; do [ -e $fname.$i ] && mv $fname.$i $fname.$((i+1)); done
                 [ -e $fname ] && cp $fname $fname.0 && : > $fname; }   # fname +fname.[0-8] = 10 total
 
 ########## main switch-case: ####################
