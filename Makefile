@@ -4,18 +4,15 @@ all: config.sh checksshbase checksshfwd checksshtunnel
 
 checksshbase checksshfwd checksshtunnel: config.sh
 	./revtunnel.sh $@ || true
+
 # manual test functions:
 startloop stoploop starttunnel stoptunnel testtunnel: config.sh
 	./revtunnel.sh $@
 
-start: starttunnel
-kill:  stoptunnel
-test:  testtunnel
-
 config.sh:
 	$(error $@ does not exists, you should create it from $@.example)
 rootrights:
-	[ "$(shell whoami)" = root ]   # or fail
+	[ "$(shell whoami)" = root ] # or fail
 
 installdir=/opt/revtunnel
 systemddir=/etc/systemd/system/multi-user.target.wants
