@@ -1,22 +1,27 @@
 default: all
-all: config.sh sshworks sshfwdworks tunnelworks
+all: config.sh checksshbase checksshfwd checksshtunnel
 	@echo "tests passed ok, now you can 'sudo make install'"
 
-sshworks:
-	./revtunnel.sh checkssh
-sshfwdworks:
-	./revtunnel.sh checksshfwd
-tunnelworks:
-	./revtunnel.sh checktunnelcmd
+checksshbase checksshfwd checksshtunnel: config.sh
+	./revtunnel.sh $@ || true
+# manual test functions:
+startloop stoploop starttunnel stoptunnel testtunnel: config.sh
+	./revtunnel.sh $@
+
+start: starttunnel
+kill:  stoptunnel
+test:  testtunnel
+
 config.sh:
-	$(error config.sh does not exists, you should create it from config.sh.example)
+	$(error $@ does not exists, you should create it from $@.example)
+rootrights:
+	[ "$(shell whoami)" = root ]   # or fail
 
 installdir=/opt/revtunnel
 systemddir=/etc/systemd/system/multi-user.target.wants
 runningusr=$(shell . ./config.sh ; echo $$runninguser)
 
-install:
-	[ "$(shell whoami)" = root ]   # or fail
+install: rootrights
 	su $(runningusr) -c make
 	mkdir -p $(installdir)
 	cp config.sh revtunnel.sh $(installdir)
@@ -30,14 +35,6 @@ uninstall:
 show:
 	systemctl status revtunnel || true
 	ps -eo pid,ppid,pgid,user,cmd --sort=start_time | grep '[s]sh\|[l]oop'
-kill:
-	./revtunnel.sh stoploop || true
 reinstall:
 	make uninstall ; make install
-start:
-	./revtunnel.sh starttunnel || true
-stop:
-	./revtunnel.sh stoptunnel  || true
-test:
-	./revtunnel.sh testtunnel  || true
 
