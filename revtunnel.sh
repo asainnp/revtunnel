@@ -58,7 +58,7 @@ checksshtunnel() { killtunnel; starttunnel
                       echo "err: tunnel seems ok, but hostname value do not mach config's: $desthostname."
                    else
                       echo "err:\tpasswordless ssh to end destination not working (ssh -p$tunnelportno $dstuser@$srvip)"
-                      echo "\tTry mannually to correct this.\n\t(for functional tunnel use '$0 starttunnel/killtunnel')"
+                      echo "\tTry mannually to correct it.\n\t(for establishing tunnel use '$0 starttunnel/killtunnel')"
                    fi
                    killtunnel; exit 1; }
 
