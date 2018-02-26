@@ -17,15 +17,14 @@ restarttunnel()  { killremote; killtunnel; starttunnel; }
 checktunnel()    { [ "$desthostname" = "$(ssh -p $tunnelportno $srvip hostname)" ] && return 0 || return 1; }
 testtunnel()     { ssh -p $tunnelportno $srvip; } #for manual test
 startloop()      # main looop function, called from systemd service
-{  printf "$(date): starting $(basename $0)" > $loggingfile
+{  printf "$(date): starting $(basename $0)" >> $loggingfile
    starttunnel ; dotsok=0 ; dotser=0
-   while true; do
-      if checktunnel
-         then dotser=0 ; [ $((++dotsok%60)) -eq 1 ] && printf "\n$(date), tunnel is ok, ok30s: "
-         else dotsok=0 ; [ $((++dotser%60)) -eq 1 ] && printf "\n$(date), tunnel error, er30s: "
-              restarttunnel
-      fi
-      printf "." ; sleep 30
+   while true; do if checktunnel
+                     then dotser=0 ; [ $((++dotsok%60)) -eq 1 ] && printf "\n$(date), tunnel is ok, ok30s: "
+                     else dotsok=0 ; [ $((++dotser%60)) -eq 1 ] && printf "\n$(date), tunnel error, er30s: "
+                          restarttunnel
+                  fi
+                  printf "." ; sleep 30
    done >> $loggingfile
 }
 stoploop()       { pkill -f "$(basename $0) startloop" ; killtunnel; }
@@ -67,7 +66,7 @@ checksshtunnel() { killtunnel; starttunnel
 case "$1" in
         startloop) mylogrotate $loggingfile; startloop ;;
          stoploop) stoploop ;;
-                *) if type -t "$1" | grep -q function; then echo running "$1"; $1 #if param1 match any function name, run it 
+                *) if type -t "$1" | grep -q function; then echo running "$1"; $1 #run param1 if it matches any function.
                    else echo "unknown param1 '$1' for revtunnel script."; fi ;;
 esac
 
