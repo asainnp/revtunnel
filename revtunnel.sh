@@ -13,10 +13,9 @@ sshopt()         { echo $1 | sed "s/B/-o BatchMode=yes /; s/S/-o StrictHostKeyCh
 starttunnel()    { ssh $(sshopt BE) -fNT -R $srvip:$tunnelportno:$dstip:$dstsshport -p$srvsshport $srvuser@$srvip; }
 killtunnel()     { pkill -f "ssh .* -R $srvip:$tunnelportno"; }
 killremote()     { ssh -p$srvsshport $srvuser@$srvip "lsof -ti tcp:$tunnelportno | xargs -r kill"; }
-killboth()       { killremote; killtunnel; }
+restarttunnel()  { killremote; killtunnel; starttunnel; }
 checktunnel()    { [ "$desthostname" = "$(ssh -p $tunnelportno $srvip hostname)" ] && return 0 || return 1; }
 testtunnel()     { ssh -p $tunnelportno $srvip; } #for manual test
-restartall()     { killboth; starttunnel; }
 startloop()      # main looop function, called from systemd service
 {  printf "$(date): starting $(basename $0)" > $loggingfile
    starttunnel ; dotsok=0 ; dotser=0
@@ -24,7 +23,7 @@ startloop()      # main looop function, called from systemd service
       if checktunnel
          then dotser=0 ; [ $((++dotsok%60)) -eq 1 ] && printf "\n$(date), tunnel is ok, ok30s: "
          else dotsok=0 ; [ $((++dotser%60)) -eq 1 ] && printf "\n$(date), tunnel error, er30s: "
-              restartall
+              restarttunnel
       fi
       printf "." ; sleep 30
    done >> $loggingfile
