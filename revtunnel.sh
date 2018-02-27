@@ -16,19 +16,10 @@ killremote()     { ssh -p$srvsshport $srvuser@$srvip "lsof -ti tcp:$tunnelportno
 restarttunnel()  { killremote; killtunnel; starttunnel; }
 checktunnel()    { [ "$desthostname" = "$(ssh -p $tunnelportno $srvip hostname)" ] && return 0 || return 1; }
 testtunnel()     { ssh -p $tunnelportno $srvip; } #for manual test
-startloop()      # main looop function, called from systemd service
-{  printf "$(date): starting $(basename $0)" >> $loggingfile
-   starttunnel ; dotsok=0 ; dotser=0
-   while true; do if checktunnel
-                     then dotser=0 ; [ $((++dotsok%60)) -eq 1 ] && printf "\n$(date), tunnel is ok, ok30s: "
-                     else dotsok=0 ; [ $((++dotser%60)) -eq 1 ] && printf "\n$(date), tunnel error, er30s: "
-                          restarttunnel
-                  fi
-                  printf "." ; sleep 30
-   done >> $loggingfile
-}
 stoploop()       { pkill -f "$(basename $0) startloop" ; killtunnel; }
 checksshonce()   { ssh $(sshopt $4) -p $3 $1@$2 hostname; return $?; }
+mylogrotate()    { fname="$1"; for i in {7..0}; do [ -e $fname.$i ] && mv $fname.$i $fname.$((i+1)); done
+                   [ -e $fname ] && cp $fname $fname.0 && : > $fname; }   # fname +fname.[0-8] = 10 total
 checksshsimple()
 {  sshuser=$1 ; sshserver=$2 ; sshport=$3 ; sshusp="$1@$2:$3"
    checksshonce $1 $2 $3 B    && return 0     # try simple ssh
@@ -41,24 +32,35 @@ checksshsimple()
    checksshonce $1 $2 $3 B    && return 0     # check again
    return 1
 }
-unittest()       { killtunnel
-                   if checksshsimple $srvuser $srvip $srvsshport; then echo ...ok
-                   else printf "err:\tpasswordless ssh to middle-server not working (ssh -p$srvip $srvuser@$srvip).\n"
-                        printf "\tTry mannually to correct this.\n" ; exit 1; fi
-                   if starttunnel; then echo ...ok
-                   else printf "err:\tssh with forwarding failed\n"
-                        printf "\tcheck/kill server-side process which owns the tunnel port ($tunnelportno), also check\n"
-                        printf "\tthat server-side sshd_config's GatewayPorts=clientspecified.\n"; killtunnel; exit 1; fi
-                   if checksshsimple $dstuser $srvip $tunnelportno; then echo ...ok
-                   else printf "err:\tpasswordless ssh to end destination not working\n"
-                        printf "\tcmd='ssh -p$tunnelportno $dstuser@$srvip'. Try mannually to correct it.\n"
-                        printf "\t(for tunnel-establish use param 'starttunnel/killtunnel\n')";    killtunnel; exit 1; fi
-                   if checktunnel; then echo ...ok
-                   else printf "err:\ttunnel seems ok, but hostname value does not match config's value: $desthostname.\n"
-                                                                                                   killtunnel; exit 1; fi
-                   killtunnel; exit 0; }
-mylogrotate()    { fname="$1"; for i in {7..0}; do [ -e $fname.$i ] && mv $fname.$i $fname.$((i+1)); done
-                   [ -e $fname ] && cp $fname $fname.0 && : > $fname; }   # fname +fname.[0-8] = 10 total
+unittest()       
+{  killtunnel
+   if checksshsimple $srvuser $srvip $srvsshport; then echo ...ok
+   else printf "err:\tpasswordless ssh to middle-server not working (ssh -p$srvip $srvuser@$srvip).\n"
+   printf "\tTry mannually to correct this.\n" ; exit 1; fi
+   if starttunnel; then echo ...ok
+   else printf "err:\tssh with forwarding failed\n"
+        printf "\tcheck/kill server-side process which owns the tunnel port ($tunnelportno), also check\n"
+        printf "\tthat server-side sshd_config's GatewayPorts=clientspecified.\n"; killtunnel; exit 1; fi
+   if checksshsimple $dstuser $srvip $tunnelportno; then echo ...ok
+   else printf "err:\tpasswordless ssh to end destination not working\n"
+        printf "\tcmd='ssh -p$tunnelportno $dstuser@$srvip'. Try mannually to correct it.\n"
+        printf "\t(for tunnel-establish use param 'starttunnel/killtunnel\n')";    killtunnel; exit 1; fi
+   if checktunnel; then echo ...ok
+   else printf "err:\ttunnel seems ok, but hostname value does not match config's value: $desthostname.\n"
+                                                                                   killtunnel; exit 1; fi
+   killtunnel; exit 0; 
+}
+startloop()      
+{  printf "$(date): starting $(basename $0)" >> $loggingfile # main looop function, called from systemd service
+   starttunnel ; dotsok=0 ; dotser=0
+   while true; do if checktunnel
+                     then dotser=0 ; [ $((++dotsok%60)) -eq 1 ] && printf "\n$(date), tunnel is ok, ok30s: "
+                     else dotsok=0 ; [ $((++dotser%60)) -eq 1 ] && printf "\n$(date), tunnel error, er30s: "
+                          restarttunnel
+                  fi
+                  printf "." ; sleep 30
+   done >> $loggingfile
+}
 
 ########## main switch-case: ###############################
 case "$1" in
