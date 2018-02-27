@@ -51,9 +51,9 @@ unittest()
    killtunnel; exit 0; 
 }
 startloop()      
-{  printf "$(date): starting $(basename $0)" >> $loggingfile # main looop function, called from systemd service
+{  printf "$(date): starting $(basename $0)" >> $loggingfile
    starttunnel ; dotsok=0 ; dotser=0
-   while true; do if checktunnel
+   while true; do if checktunnel     # main looop function, called from systemd service
                      then dotser=0 ; [ $((++dotsok%60)) -eq 1 ] && printf "\n$(date), tunnel is ok, ok30s: "
                      else dotsok=0 ; [ $((++dotser%60)) -eq 1 ] && printf "\n$(date), tunnel error, er30s: "
                           restarttunnel
