@@ -31,36 +31,34 @@ stoploop()       { pkill -f "$(basename $0) startloop" ; killtunnel; }
 checksshonce()   { ssh $(sshopt $4) -p $3 $1@$2 hostname; return $?; }
 checksshsimple()
 {  sshuser=$1 ; sshserver=$2 ; sshport=$3 ; sshusp="$1@$2:$3"
-   if checksshonce $1 $2 $3 B ; then return 0; fi # try simple ssh
-   if checksshonce $1 $2 $3 BS; then return 0; fi # try ssh with non-strict key checking
-   ssh-keygen -R "[$sshserver]:$sshport"          # try removing key (non-strict checking will add new value automatically)
-   if checksshonce $1 $2 $3 BS; then return 0; fi    
+   checksshonce $1 $2 $3 B    && return 0     # try simple ssh
+   checksshonce $1 $2 $3 BS   && return 0     # try ssh with non-strict key checking
+   ssh-keygen -R "[$sshserver]:$sshport"      # try removing key (non-strict checking will add new value automatically)
+   checksshonce $1 $2 $3 BS   && return 0     # check again
    read -p "err:\t passwordless ssh to '$sshusp' not working\n\ttry ssh-copy-id to $sshusp as $(whoami)? " answ
-   echo $answ | grep -iq '^y'     || return 1     # exit fn if user didn't response with y/Y...
-   ssh-copy-id -p$sshport $sshuser@$sshserver     # try ssh-copy-id
-   if checksshonce $1 $2 $3 B; then  return 0; fi 
+   echo $answ | grep -iq '^y' || return 1     # exit function if user response is not y/Y...
+   ssh-copy-id -p$sshport $sshuser@$sshserver # try ssh-copy-id
+   checksshonce $1 $2 $3 B    && return 0     # check again
    return 1
 }
+unittest()       { killtunnel
+                   if checksshsimple $srvuser $srvip $srvsshport; then echo ...ok
+                   else printf "err:\tpasswordless ssh to middle-server not working (ssh -p$srvip $srvuser@$srvip).\n"
+                        printf "\tTry mannually to correct this.\n" ; exit 1; fi
+                   if starttunnel; then echo ...ok
+                   else printf "err:\tssh with forwarding failed\n"
+                        printf "\tcheck/kill server-side process which owns the tunnel port ($tunnelportno), also check\n"
+                        printf "\tthat server-side sshd_config's GatewayPorts=clientspecified.\n"; killtunnel; exit 1; fi
+                   if checksshsimple $dstuser $srvip $tunnelportno; then echo ...ok
+                   else printf "err:\tpasswordless ssh to end destination not working\n"
+                        printf "\tcmd='ssh -p$tunnelportno $dstuser@$srvip'. Try mannually to correct it.\n"
+                        printf "\t(for tunnel-establish use param 'starttunnel/killtunnel\n')";    killtunnel; exit 1; fi
+                   if checktunnel; then echo ...ok
+                   else printf "err:\ttunnel seems ok, but hostname value does not match config's value: $desthostname.\n"
+                                                                                               killtunnel; exit 1; fi
+                   killtunnel; exit 0; }
 mylogrotate()    { fname="$1"; for i in {7..0}; do [ -e $fname.$i ] && mv $fname.$i $fname.$((i+1)); done
                    [ -e $fname ] && cp $fname $fname.0 && : > $fname; }   # fname +fname.[0-8] = 10 total
-
-########## functions for Makefile's testing: ###############
-checksshbase()   { if checksshsimple $srvuser $srvip $srvsshport; then echo ...ok; exit 0; fi
-                   echo "err: passwordless ssh to middle-server not working (ssh -p$srvip $srvuser@$srvip)."
-                   echo "     Try mannually to correct this." ; exit 1; }
-checksshfwd()    { killtunnel; if starttunnel; then killtunnel ;       echo ...ok; exit 0; fi
-                   echo "err: ssh with forwarding failed, check/kill server-side process which owns port: $tunnelportno"
-                   echo "     also check that server-side sshd_config contains: GatewayPorts clientspecified."
-                   killtunnel; exit 1; }
-checksshtunnel() { killtunnel; starttunnel
-                   if checksshsimple $dstuser $srvip $tunnelportno; then
-                      if checktunnel; then  echo ...ok; killtunnel; exit 0; fi
-                      echo "err: tunnel seems ok, but hostname value do not mach config's: $desthostname."
-                   else
-                      echo "err:\tpasswordless ssh to end destination not working (ssh -p$tunnelportno $dstuser@$srvip)"
-                      echo "\tTry mannually to correct it.\n\t(for establishing tunnel use '$0 starttunnel/killtunnel')"
-                   fi
-                   killtunnel; exit 1; }
 
 ########## main switch-case: ###############################
 case "$1" in

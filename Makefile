@@ -1,12 +1,8 @@
 default: all
-all: config.sh checksshbase checksshfwd checksshtunnel
+all: config.sh unittest
 	@echo "tests passed ok, now you can 'sudo make install'"
 
-checksshbase checksshfwd checksshtunnel: config.sh
-	./revtunnel.sh $@ || true
-
-# manual test functions:
-startloop stoploop starttunnel stoptunnel testtunnel: config.sh
+unittest startloop stoploop starttunnel stoptunnel testtunnel: config.sh
 	./revtunnel.sh $@
 
 config.sh:
