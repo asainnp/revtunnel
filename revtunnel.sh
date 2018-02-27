@@ -55,7 +55,7 @@ unittest()       { killtunnel
                         printf "\t(for tunnel-establish use param 'starttunnel/killtunnel\n')";    killtunnel; exit 1; fi
                    if checktunnel; then echo ...ok
                    else printf "err:\ttunnel seems ok, but hostname value does not match config's value: $desthostname.\n"
-                                                                                               killtunnel; exit 1; fi
+                                                                                                   killtunnel; exit 1; fi
                    killtunnel; exit 0; }
 mylogrotate()    { fname="$1"; for i in {7..0}; do [ -e $fname.$i ] && mv $fname.$i $fname.$((i+1)); done
                    [ -e $fname ] && cp $fname $fname.0 && : > $fname; }   # fname +fname.[0-8] = 10 total
