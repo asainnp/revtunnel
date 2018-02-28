@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 
 ########## variables: ######################################
-cd $(dirname $0) ;   . ./config.sh  # 5 vars: runninguser,fullsrvlogin,tunnelportno,fulldstlogin,desthostname.
-loggingfile=/tmp/lastrevtunnel.log  # for main loop logging
+cd $(dirname $0) ;   . ./config.sh  # 5vars: runninguser,fullsrvlogin,tunnelportno,fulldstlogin,desthostname.
 read srvuser srvip srvsshport dstuser dstip dstsshport < <(echo "$fullsrvlogin:$fulldstlogin" | tr '@:' ' ')
+tunnelpoints=$srvip:$tunnelportno:$dstip:$dstsshport
+loggingfname=/tmp/lastrevtunnel.log # for main loop logging
 
 ########## usercheck: ######################################
 [ $(whoami) = "$runninguser" ] || { echo "this script should be called by user: $runninguser."; exit 1; }
 
 ########## functions: ######################################
-sshopt()         { echo $1 | sed "s/B/-o BatchMode=yes /; s/S/-o StrictHostKeyChecking=no /; s/E/-o ExitOnForwardFailure=yes /"; }
-starttunnel()    { ssh $(sshopt BE) -fNT -R $srvip:$tunnelportno:$dstip:$dstsshport -p$srvsshport $srvuser@$srvip; }
-killtunnel()     { pkill -f "ssh .* -R $srvip:$tunnelportno"; }
+sshopt()         { all=(BatchMode=yes StrictHostKeyChecking=no ExitOnForwardFailure=yes)
+                   sed "s/-o[^$1][^ $]*//g" <<< ${all[@]/#/-o}; } # B/S/E chars in param 1 selects options
+starttunnel()    { ssh $(sshopt BE) -fNT -R $tunnelpoints -p$srvsshport $srvuser@$srvip; }
+killtunnel()     { pkill -f "ssh .* $tunnelpoints"; }
 killremote()     { ssh -p$srvsshport $srvuser@$srvip "lsof -ti tcp:$tunnelportno | xargs -r kill"; }
 restarttunnel()  { killremote; killtunnel; starttunnel; }
 checktunnel()    { [ "$desthostname" = "$(ssh -p $tunnelportno $srvip hostname)" ] && return 0 || return 1; }
@@ -24,10 +26,10 @@ checksshsimple()
 {  sshuser=$1 ; sshserver=$2 ; sshport=$3 ; sshusp="$1@$2:$3"
    checksshonce $1 $2 $3 B    && return 0     # try simple ssh
    checksshonce $1 $2 $3 BS   && return 0     # try ssh with non-strict key checking
-   ssh-keygen -R "[$sshserver]:$sshport"      # try removing key (non-strict checking will add new value automatically)
+   ssh-keygen -R "[$sshserver]:$sshport"      # try removing key (non-strict-checking will add new value)
    checksshonce $1 $2 $3 BS   && return 0     # check again
-   read -p "err:\t passwordless ssh to '$sshusp' not working\n\ttry ssh-copy-id to $sshusp as $(whoami)? " answ
-   echo $answ | grep -iq '^y' || return 1     # exit function if user response is not y/Y...
+   read -p "err:\t passwordless ssh to '$sshusp' failed\n\ttry ssh-copy-id to $sshusp as $(whoami)? " ans
+   echo $ans | grep -iq '^y'  || return 1     # exit function if user response is not y/Y...
    ssh-copy-id -p$sshport $sshuser@$sshserver # try ssh-copy-id
    checksshonce $1 $2 $3 B    && return 0     # check again
    return 1
@@ -51,7 +53,7 @@ unittest()
    killtunnel; exit 0; 
 }
 startloop()      
-{  printf "$(date): starting $(basename $0)" >> $loggingfile
+{  mylogrotate $loggingfname; printf "$(date): starting $(basename $0)" >> $loggingfname
    starttunnel ; dotsok=0 ; dotser=0
    while true; do if checktunnel     # main looop function, called from systemd service
                      then dotser=0 ; [ $((++dotsok%60)) -eq 1 ] && printf "\n$(date), tunnel is ok, ok30s: "
@@ -59,15 +61,13 @@ startloop()
                           restarttunnel
                   fi
                   printf "." ; sleep 30
-   done >> $loggingfile
+   done >> $loggingfname
 }
 
 ########## main switch-case: ###############################
-case "$1" in
-        startloop) mylogrotate $loggingfile; startloop ;;
-         stoploop) stoploop ;;
-                *) if type -t "$1" | grep -q function; then echo running "$1"; $1 #run param1 if it matches any function.
-                   else echo "unknown param1 '$1' for revtunnel script."; fi ;;
+case "$1" in    # main functions are startloop/stoploop, but any existing function can be called from shell.
+   *) if type -t "$1" | grep -q function; then echo running "$1 ${@:1}"; $1 "${@:1}" 
+      else echo "unknown param1 '$1' for revtunnel script."; fi ;;
 esac
 
 ########## eof. ############################################
