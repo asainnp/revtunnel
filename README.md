@@ -27,6 +27,6 @@ why?
 installation:
 
 *  `git clone https://github.com/asainnp/revtunnel ; cd revtunnel`
-*  `cp config.sh.example config.sh ; vim config.sh` # edit ports and addresses
-*  `make`
-*  `sudo make install`
+*  `cp config.sh.example config.sh ; vim config.sh  # edit ports and addresses`
+*  `make                      # complete check of configuration and connection`
+*  `sudo make install         # installing files to /opt/revtunnel and service`
