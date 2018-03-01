@@ -9,3 +9,8 @@ tunnelportno=value
 # dest-server (on local network) ... often situation is that "dest == source"
 fulldstlogin=user@ip:port                  # all 3 parts (user, ip, port) are mandatory
 desthostname=name                          # text that command 'hostname' should return on dest comp
+
+# additional forwarding tunnels, pairs srvport:dstport (main ssh tunnel is defined already above)
+# addtunnelpairs=(62888:80 62889:8080 62890:443 62891:5901) #example 4 additional tunnels
+addtunnelpairs=( )                         # can be empty too.
+

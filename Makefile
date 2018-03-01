@@ -1,5 +1,5 @@
-default: all
-all: config.sh unittest
+default: test
+test: config.sh unittest
 	@echo "tests passed ok, now you can 'sudo make install'"
 
 unittest startloop stoploop starttunnel stoptunnel testtunnel: config.sh

@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
 ########## variables: ######################################
-cd $(dirname $0) ;   . ./config.sh  # 5vars: runninguser,fullsrvlogin,tunnelportno,fulldstlogin,desthostname.
+cd $(dirname $0) ;   . ./config.sh  # 6vars: runninguser,fullsrvlogin,tunnelportno,desthostname
+                                    #                    fulldstlogin,addtunnelpairs
 read srvuser srvip srvsshport dstuser dstip dstsshport < <(echo "$fullsrvlogin:$fulldstlogin" | tr '@:' ' ')
-tunnelpoints=$srvip:$tunnelportno:$dstip:$dstsshport
+tunpoints=$srvip:$tunnelportno:$dstip:$dstsshport      # tunnel points for main, ssh tunnel
+addptsarr=(${addtunnelpairs//:/:$dstip:})
+addptsstr="${addptsarr[@]/#/-R $srvip:}"               # additional reverse tunnels
 loggingfname=/tmp/lastrevtunnel.log # for main loop logging
 
 ########## usercheck: ######################################
@@ -12,8 +15,8 @@ loggingfname=/tmp/lastrevtunnel.log # for main loop logging
 ########## functions: ######################################
 sshopt()         { all=(BatchMode=yes StrictHostKeyChecking=no ExitOnForwardFailure=yes)
                    sed "s/-o[^$1][^ $]*//g" <<< ${all[@]/#/-o}; } # B/S/E chars in param 1 selects options
-starttunnel()    { ssh $(sshopt BE) -fNT -R $tunnelpoints -p$srvsshport $srvuser@$srvip; }
-killtunnel()     { pkill -f "ssh .* $tunnelpoints"; }
+starttunnel()    { ssh $(sshopt BE) -fNT -R $tunpoints $addptsstr -p$srvsshport $srvuser@$srvip; }
+killtunnel()     { pkill -f "ssh .* $tunpoints"; }
 killremote()     { ssh -p$srvsshport $srvuser@$srvip "lsof -ti tcp:$tunnelportno | xargs -r kill"; }
 restarttunnel()  { killremote; killtunnel; starttunnel; }
 checktunnel()    { [ "$desthostname" = "$(ssh -p $tunnelportno $srvip hostname)" ] && return 0 || return 1; }
