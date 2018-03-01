@@ -14,7 +14,8 @@ installdir=/opt/revtunnel
 systemddir=/etc/systemd/system/multi-user.target.wants
 runningusr=$(shell . ./config.sh ; echo $$runninguser)
 
-install: rootrights
+install uninstall reinstall: rootrights
+install:
 	su $(runningusr) -c make
 	mkdir -p $(installdir)
 	cp config.sh revtunnel.sh $(installdir)
