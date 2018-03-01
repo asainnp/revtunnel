@@ -8,13 +8,14 @@ tunpoints=$srvip:$tunnelportno:$dstip:$dstsshport      # tunnel points for main,
 addptsarr=(${addtunnelpairs//:/:$dstip:})
 addptsstr="${addptsarr[@]/#/-R $srvip:}"               # additional reverse tunnels
 loggingfname=/tmp/lastrevtunnel.log                    # file for main loop logging
+hasrootport=no; for i in $tunnelportno ${addptsarr[@]%%:*}; do [ 1024 -gt "$i" ] && hasrootport=yes; done
 
 ########## usercheck: ######################################
 [ $(whoami) = "$runninguser" ] || { echo "this script should be called by user: $runninguser."; exit 1; }
 
 ########## functions: ######################################
 sshopt()         { all=(BatchMode=yes StrictHostKeyChecking=no ExitOnForwardFailure=yes)
-                   sed "s/-o[^$1][^ $]*//g" <<< ${all[@]/#/-o}; } # B/S/E chars in param 1 selects options
+                   sed "s/-o[^$1][^ $]*//g" <<< ${all[@]/#/-o}; } # B/S/E char in param 1 selects options
 starttunnel()    { ssh $(sshopt BE) -fNT -R $tunpoints $addptsstr -p$srvsshport $srvuser@$srvip; }
 killtunnel()     { pkill -f "ssh .* $tunpoints"; }
 killremote()     { ssh -p$srvsshport $srvuser@$srvip "lsof -ti tcp:$tunnelportno | xargs -r kill"; }
@@ -45,7 +46,15 @@ unittest()
    if starttunnel; then echo ...ok
    else printf "err:\tssh with forwarding failed\n"
         printf "\tcheck/kill server-side process which owns the tunnel port ($tunnelportno), also check\n"
-        printf "\tthat server-side sshd_config's GatewayPorts=clientspecified.\n"; killtunnel; exit 1; fi
+        printf "\tthat server-side sshd_config's GatewayPorts=clientspecified.\n"
+        if [ "$hasrootport" = "yes" ]; then
+           printf "\t...some of defined tunnel ports are bellow 1024"
+           if [ "$srvuser" = root ]; then printf ", check PermitRootLogin param too.\n";
+           else printf ", check $srvuser privileges on $srvip, /or use higher ports, /or try root user.\n"
+           fi
+        fi
+        killtunnel; exit 1
+   fi
    if checksshsimple $dstuser $srvip $tunnelportno; then echo ...ok
    else printf "err:\tpasswordless ssh to end destination not working\n"
         printf "\tcmd='ssh -p$tunnelportno $dstuser@$srvip'. Try mannually to correct it.\n"
