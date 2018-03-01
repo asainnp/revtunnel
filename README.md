@@ -24,10 +24,10 @@ why?
   Makefile indicates known initial problems that usually tooks too much time when correcting them over and over 
   again on different computers. 
 
-installation:
-...
+installation?
+```
 git clone https://github.com/asainnp/revtunnel ; cd revtunnel`
 cp config.sh.example config.sh ; vim config.sh  # edit ports and addresses
 make                      # complete check of configuration and connection
 sudo make install         # installing files to /opt/revtunnel and service
-...
+```
