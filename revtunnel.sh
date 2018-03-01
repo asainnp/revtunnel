@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
-########## variables: ######################################
-cd $(dirname $0) ;   . ./config.sh  # 6vars: runninguser,fullsrvlogin,tunnelportno,desthostname
-                                    #                    fulldstlogin,addtunnelpairs
+########## variables: #######################################################################################
+cd $(dirname $0) ;   . ./config.sh  # 6vars: runninguser, fullsrvlogin, tunnelportno, desthostname
+                                    #                     fulldstlogin, addtunnelpairs
 read srvuser srvip srvsshport dstuser dstip dstsshport < <(echo "$fullsrvlogin:$fulldstlogin" | tr '@:' ' ')
-tunpoints=$srvip:$tunnelportno:$dstip:$dstsshport      # tunnel points for main, ssh tunnel
+tunpoints=$srvip:$tunnelportno:$dstip:$dstsshport       # tunnel points for main ssh tunnel
 addptsarr=(${addtunnelpairs//:/:$dstip:})
-addptsstr="${addptsarr[@]/#/-R $srvip:}"               # additional reverse tunnels
-loggingfname=/tmp/lastrevtunnel.log                    # file for main loop logging
+addptsstr="${addptsarr[@]/#/-R $srvip:}"                # additional reverse tunnels
+loggingfname=/tmp/lastrevtunnel.log                     # file for main loop logging
 hasrootport=no; for i in $tunnelportno ${addptsarr[@]%%:*}; do [ 1024 -gt "$i" ] && hasrootport=yes; done
 
-########## usercheck: ######################################
+########## usercheck: #######################################################################################
 [ $(whoami) = "$runninguser" ] || { echo "this script should be called by user: $runninguser."; exit 1; }
 
-########## functions: ######################################
+########## functions: #######################################################################################
 sshopt()         { all=(BatchMode=yes StrictHostKeyChecking=no ExitOnForwardFailure=yes)
                    sed "s/-o[^$1][^ $]*//g" <<< ${all[@]/#/-o}; } # B/S/E char in param 1 selects options
 starttunnel()    { ssh $(sshopt BE) -fNT -R $tunpoints $addptsstr -p$srvsshport $srvuser@$srvip; }
@@ -48,9 +48,9 @@ unittest()
         printf "\tcheck/kill server-side process which owns the tunnel port ($tunnelportno), also check\n"
         printf "\tthat server-side sshd_config's GatewayPorts=clientspecified.\n"
         if [ "$hasrootport" = "yes" ]; then
-           printf "\t...some of defined tunnel ports are bellow 1024"
-           if [ "$srvuser" = root ]; then printf ", check PermitRootLogin param too.\n";
-           else printf ", check $srvuser privileges on $srvip, /or use higher ports, /or try root user.\n"
+           printf "\t...some of defined tunnel ports are bellow 1024, check "
+           if [ "$srvuser" = root ]; then printf "PermitRootLogin param too.\n";
+           else printf "$srvuser privileges on $srvip, /or use higher ports, /or try root user.\n"
            fi
         fi
         killtunnel; exit 1
@@ -70,17 +70,16 @@ startloop()
    while true; do if checktunnel     # main looop function, called from systemd service
                      then dotser=0 ; [ $((++dotsok%60)) -eq 1 ] && printf "\n$(date), tunnel is ok, ok30s: "
                      else dotsok=0 ; [ $((++dotser%60)) -eq 1 ] && printf "\n$(date), tunnel error, er30s: "
-                          restarttunnel
-                  fi
+                          restarttunnel; fi
                   printf "." ; sleep 30
    done >> $loggingfname
 }
 
-########## main switch-case: ###############################
+########## main switch-case: ################################################################################
 case "$1" in    # main functions are startloop/stoploop, but any existing function can be called from shell.
    *) if type -t "$1" | grep -q function; then echo running "$1 ${@:1}"; $1 "${@:1}" 
       else echo "unknown param1 '$1' for revtunnel script."; fi ;;
 esac
 
-########## eof. ############################################
+########## eof. #############################################################################################
 
