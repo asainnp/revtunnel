@@ -7,7 +7,7 @@ read srvuser srvip srvsshport dstuser dstip dstsshport < <(echo "$fullsrvlogin:$
 tunpoints=$srvip:$tunnelportno:$dstip:$dstsshport      # tunnel points for main, ssh tunnel
 addptsarr=(${addtunnelpairs//:/:$dstip:})
 addptsstr="${addptsarr[@]/#/-R $srvip:}"               # additional reverse tunnels
-loggingfname=/tmp/lastrevtunnel.log # for main loop logging
+loggingfname=/tmp/lastrevtunnel.log                    # file for main loop logging
 
 ########## usercheck: ######################################
 [ $(whoami) = "$runninguser" ] || { echo "this script should be called by user: $runninguser."; exit 1; }
