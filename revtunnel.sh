@@ -40,10 +40,10 @@ checksshsimple()
 }
 unittest()       
 {  killtunnel
-   if checksshsimple $srvuser $srvip $srvsshport; then echo ...ok
+   if checksshsimple $srvuser $srvip $srvsshport;   then echo "srv-ssh                     ...ok"
    else printf "err:\tpasswordless ssh to middle-server not working (ssh -p$srvip $srvuser@$srvip).\n"
    printf "\tTry mannually to correct this.\n" ; exit 1; fi
-   if starttunnel; then echo ...ok
+   if starttunnel;                                  then echo "srv-ssh-with-tunnel         ...ok"
    else printf "err:\tssh with forwarding failed\n"
         printf "\tcheck/kill server-side process which owns the tunnel port ($tunnelportno), also check\n"
         printf "\tthat server-side sshd_config's GatewayPorts=clientspecified.\n"
@@ -55,11 +55,11 @@ unittest()
         fi
         killtunnel; exit 1
    fi
-   if checksshsimple $dstuser $srvip $tunnelportno; then echo ...ok
+   if checksshsimple $dstuser $srvip $tunnelportno; then echo "dst-ssh-through-tunnel      ...ok"
    else printf "err:\tpasswordless ssh to end destination not working\n"
         printf "\tcmd='ssh -p$tunnelportno $dstuser@$srvip'. Try mannually to correct it.\n"
         printf "\t(for tunnel-establish use param 'starttunnel/killtunnel\n')";    killtunnel; exit 1; fi
-   if checktunnel; then echo ...ok
+   if checktunnel;                                  then echo "hostname-run-on-destination ...ok"
    else printf "err:\ttunnel seems ok, but hostname value does not match config's value: $desthostname.\n"
                                                                                    killtunnel; exit 1; fi
    killtunnel; exit 0; 
