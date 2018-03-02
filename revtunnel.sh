@@ -5,8 +5,8 @@ cd $(dirname $0) ;   . ./config.sh  # 6vars: runninguser, fullsrvlogin, tunnelpo
                                     #                     fulldstlogin, addtunnelpairs
 read srvuser srvip srvsshport dstuser dstip dstsshport < <(echo "$fullsrvlogin:$fulldstlogin" | tr '@:' ' ')
 tunpoints=$srvip:$tunnelportno:$dstip:$dstsshport       # tunnel points for main ssh tunnel
-addptsarr=(${addtunnelpairs//:/:$dstip:})
-addptsstr="${addptsarr[@]/#/-R $srvip:}"                # additional reverse tunnels
+addptsarr=(${addtunnelpairs//:/:$dstip:})               # additional reverse tunnels pairs tunport:dstport
+addptsstr="${addptsarr[@]/#/-R $srvip:}"                #   - converted to '-R srvip:tunport:dstip:dstport'
 loggingfname=/tmp/lastrevtunnel.log                     # file for main loop logging
 hasrootport=no; for i in $tunnelportno ${addptsarr[@]%%:*}; do [ 1024 -gt "$i" ] && hasrootport=yes; done
 
@@ -76,7 +76,7 @@ startloop()
 }
 
 ########## main switch-case: ################################################################################
-case "$1" in    # main functions are startloop/stoploop, but any existing function can be called from shell.
+case "$1" in    # main functions are startloop/stoploop, but any existing function can be called by param1
    *) if type -t "$1" | grep -q function; then echo running "$1 ${@:1}"; $1 "${@:1}" 
       else echo "unknown param1 '$1' for revtunnel script."; fi ;;
 esac
