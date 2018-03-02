@@ -75,11 +75,9 @@ startloop()
    done >> $loggingfname
 }
 
-########## main switch-case: ################################################################################
-case "$1" in    # main functions are startloop/stoploop, but any existing function can be called by param1
-   *) if type -t "$1" | grep -q function; then echo running "$1 ${@:1}"; $1 "${@:1}" 
-      else echo "unknown param1 '$1' for revtunnel script."; fi ;;
-esac
+########## function call by param1: #########################################################################
+if type -t "$1" | grep -q function; then echo "running: $1 ${@:2}"; $1 "${@:2}" 
+else echo "unknown param1 '$1'"; fi # par1 can be any existing function (main are: startloop and stoploop)
 
 ########## eof. #############################################################################################
 
