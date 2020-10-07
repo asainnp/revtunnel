@@ -12,6 +12,7 @@ rootrights:
 
 installdir=/opt/revtunnel
 systemddir=/etc/systemd/system/multi-user.target.wants
+ usrlibdir=/usr/lib/systemd/system
 runningusr=$(shell . ./config.sh ; echo $$runninguser)
 
 install uninstall reinstall: rootrights
@@ -20,7 +21,9 @@ install:
 	mkdir -p $(installdir)
 	cp config.sh revtunnel.sh $(installdir)
 	sed "s/^User=.*$$/User=$(runningusr)/" revtunnel.service > $(installdir)/revtunnel.service
-	ln -sf $(installdir)/revtunnel.service $(systemddir)/revtunnel.service
+	echo "# this file is copied to $(usrlibdir) which is then soft-linked to $(systemdir)." >> $(installdir)/revtunnel.service
+	cp $(installdir)/revtunnel.service $(usrlibdir)/revtunnel.service
+	ln -sf $(usrlibdir)/revtunnel.service $(systemddir)/revtunnel.service
 	systemctl daemon-reload && systemctl start revtunnel ; make show
 uninstall:
 	systemctl stop revtunnel || true

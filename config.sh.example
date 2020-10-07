@@ -7,6 +7,7 @@ fullsrvlogin=user@ip:port                  # all 3 parts (user, ip, port) are ma
 tunnelportno=value 
 
 # dest-server (on local network) ... often situation is that "dest == source"
+#                                            (source means 'this' comp, where scripts are installed)
 fulldstlogin=user@ip:port                  # all 3 parts (user, ip, port) are mandatory
 desthostname=name                          # text that command 'hostname' should return on dest comp
 
