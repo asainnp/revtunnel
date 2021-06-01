@@ -15,3 +15,6 @@ desthostname=name                          # text that command 'hostname' should
 # addtunnelpairs="62888:80 62889:8080 62890:443 62891:5901" #example 4 additional tunnels
 addtunnelpairs=""                          # can be empty too.
 
+#source comp should connect to middle-comp and open tunnel-port that leads to 
+#    localIpDestinationComp (in source computer local network, can be 127.0.0.1 or other)
+#... so that some third user computer can connect to middleServer:tunnelPort and go to dest:destport

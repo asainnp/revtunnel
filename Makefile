@@ -21,7 +21,7 @@ install:
 	mkdir -p $(installdir)
 	cp config.sh revtunnel.sh $(installdir)
 	sed "s/^User=.*$$/User=$(runningusr)/" revtunnel.service > $(installdir)/revtunnel.service
-	echo -e "\n# this file is copied to $(usrlibdir) which is then soft-linked to $(systemddir)." >> $(installdir)/revtunnel.service
+	printf "\n# this file is copied to $(usrlibdir) which is then soft-linked to $(systemddir).\n" >> $(installdir)/revtunnel.service
 	cp $(installdir)/revtunnel.service $(usrlibdir)/revtunnel.service
 	ln -sf $(usrlibdir)/revtunnel.service $(systemddir)/revtunnel.service
 	systemctl daemon-reload && systemctl start revtunnel ; make show

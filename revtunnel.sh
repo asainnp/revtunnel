@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 ########## variables: #######################################################################################
-cd $(dirname $0) ;   . ./config.sh  # 6vars: runninguser, fullsrvlogin, tunnelportno, desthostname
-                                    #                     fulldstlogin, addtunnelpairs
+cd $(dirname $0) ;   . ./config.sh  # 6vars: runninguser, srvlogin, tunnport, hostname
+                                    #                     dstlogin, addtunnelpairs
 read srvuser srvip srvsshport dstuser dstip dstsshport < <(echo "$fullsrvlogin:$fulldstlogin" | tr '@:' ' ')
 tunpoints=$srvip:$tunnelportno:$dstip:$dstsshport       # tunnel points for main ssh tunnel
 addptsarr=(${addtunnelpairs//:/:$dstip:})               # additional reverse tunnels pairs tunport:dstport
@@ -41,7 +41,7 @@ checksshsimple()
 unittest()       
 {  killtunnel
    if checksshsimple $srvuser $srvip $srvsshport;   then echo "srv-ssh                     ...ok"
-   else printf "err:\tpasswordless ssh to middle-server not working (ssh -p$srvip $srvuser@$srvip).\n"
+   else printf "err:\tpasswordless ssh to middle-server not working (ssh -p$srvsshport $srvuser@$srvip).\n"
    printf "\tTry mannually to correct this.\n" ; exit 1; fi
    if starttunnel;                                  then echo "srv-ssh-with-tunnel         ...ok"
    else printf "err:\tssh with forwarding failed\n"
